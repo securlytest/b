@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Blob URL Embedder</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Apply the Inter font globally */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Custom styles for the URL input */
+        #urlInput {
+            min-height: 48px;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+
+    <div class="bg-white p-8 rounded-xl shadow-2xl max-w-2xl w-full">
+        <h1 class="text-3xl font-bold text-gray-800 mb-4">Dynamic Blob URL Embedder</h1>
+        <p class="text-gray-600 mb-4">
+            Enter a web address below. The script will create an in-memory HTML page with an embedded frame and open it using a secure <code>blob:</code> URL.
+        </p>
+
+        <!-- Input Area for URL -->
+        <input type="url" 
+               id="urlInput" 
+               class="w-full border-2 border-gray-300 rounded-lg p-3 text-sm mb-6 focus:border-blue-500 focus:ring-blue-500"
+               placeholder="Enter a full URL (e.g., https://example.com)"/>
+        
+        <button id="openBlobButton" 
+                class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition duration-200 shadow-md hover:shadow-lg focus:outline-none focus:ring-4 focus:ring-blue-500/50">
+            Create Blob and Embed URL
+        </button>
+
+        <p id="statusMessage" class="mt-6 text-sm text-gray-500 italic">Ready to embed.</p>
+    </div>
+
+    <script>
+        document.getElementById('openBlobButton').addEventListener('click', generateAndOpenBlob);
+        const statusMessage = document.getElementById('statusMessage');
+        const urlInput = document.getElementById('urlInput');
+
+        // Set a default value to make it easy to test
+        urlInput.value = "https://www.wikipedia.org/wiki/Blob";
+
+        /**
+         * Creates an in-memory Blob object containing an iframe that embeds the user's URL.
+         */
+        function generateAndOpenBlob() {
+            const externalUrl = urlInput.value;
+
+            if (!externalUrl.trim()) {
+                statusMessage.textContent = 'Please enter a URL to embed!';
+                return;
+            }
+
+            // 1. Define the full HTML structure. The header is now removed.
+            const htmlContent = `
+                <!DOCTYPE html>
+                <html lang="en">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>Embedded URL via Blob</title>
+                    <style>
+                        body { 
+                            margin: 0; 
+                            padding: 0; 
+                            height: 100vh; 
+                            /* Body now directly contains only the iframe */
+                            display: flex; 
+                            flex-direction: column;
+                            font-family: 'Inter', sans-serif;
+                            background-color: #f0fdf4;
+                        }
+                        /* Removed header styling */
+                        iframe {
+                            flex-grow: 1; /* Make the iframe fill the rest of the height */
+                            border: none;
+                            width: 100%; /* Ensure iframe uses full width */
+                        }
+                    </style>
+                </head>
+                <body>
+                    <!-- The header content has been removed -->
+                    <!-- The key change: Embedding the user's URL in an iframe -->
+                    <iframe src="${externalUrl}"></iframe>
+                </body>
+                </html>
+            `;
+
+            // 2. Create the Blob object with the injected HTML content.
+            const blob = new Blob([htmlContent], { type: 'text/html' });
+
+            // 3. Generate the 'blob:' URL from the Blob.
+            const blobUrl = URL.createObjectURL(blob);
+
+            statusMessage.textContent = `Generated Blob URL. Opening...`;
+
+            // 4. Open the generated URL in a new tab.
+            const newWindow = window.open(blobUrl, '_blank');
+
+            // Error handling for pop-up blockers
+            if (!newWindow || newWindow.closed || typeof newWindow.closed == 'undefined') {
+                statusMessage.textContent = 'Error: Pop-up blocker may have prevented the new tab from opening.';
+            } else {
+                statusMessage.textContent = `Successfully opened Blob content.`;
+            }
+        }
+    </script>
+</body>
+</html>
